@@ -335,6 +335,7 @@ namespace PSWHost
             MyTracer.TraceInformation("ScriptSize: {0}", this.Script.Length);
             MyTracer.TraceInformation("Start the script ({0})", string.Join(", ", Args));
             powershell.AddScript(this.Script);
+            ParsePowerShellParmsFromArgs(Args);
 
             powershell.AddCommand("out-string");
             powershell.AddParameter("-stream");
@@ -356,6 +357,72 @@ namespace PSWHost
             powershell.Runspace.CloseAsync();
             powershell.BeginStop(null, null);
         }
+
+        private void ParsePowerShellParmsFromArgs(string[] Args)
+        {
+            string Parameter = null;
+            System.Text.RegularExpressions.Regex MyRegEx = new System.Text.RegularExpressions.Regex("^(?:/|-)([^/-: ]+)(?::?)([^:]*)$");
+            for (int i = 1; i < Args.Length; i++)
+            {
+                System.Text.RegularExpressions.Match Match = MyRegEx.Match(Args[i]);
+                if (Match.Success && Match.Groups.Count == 3)
+                {
+                    // Found a PowerShell style command Line Argument
+
+                    if (Parameter != null)
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddParameter {0} = true", Parameter);
+                        powershell.AddParameter(Parameter);
+                    }
+
+                    if (Match.Groups[2].Value.Trim() == "")
+                    {
+                        Parameter = Match.Groups[1].Value;
+                    }
+                    else if (Match.Groups[2].Value.ToUpper() == "$TRUE") // Special Case 
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddParameter {0} = true", Match.Groups[1].Value);
+                        powershell.AddParameter(Match.Groups[1].Value, true);
+                        Parameter = null;
+                    }
+                    else if (Match.Groups[2].Value.ToUpper() == "$FALSE") // Special Case
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddParameter {0} = true", Match.Groups[1].Value);
+                        powershell.AddParameter(Match.Groups[1].Value, false);
+                        Parameter = null;
+                    }
+                    else
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddParameter {0} = {1}", Match.Groups[1].Value, Match.Groups[2].Value);
+                        powershell.AddParameter(Match.Groups[1].Value, Match.Groups[2].Value);
+                        Parameter = null;
+                    }
+                }
+                else
+                {
+                    string Val = Args[i].Trim().TrimEnd(new char[] { '\'', '\"' }).TrimStart(new char[] { '\'', '\"' });
+                    if (Parameter != null)
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddParameter {0} = {1}", Parameter, Val);
+                        powershell.AddParameter(Parameter, Val);
+                        Parameter = null;
+                    }
+                    else
+                    {
+                        MyTracer.TraceInformation("CommandLine.AddArgument {0} ", Parameter, Val);
+                        powershell.AddArgument(Val);
+                    }
+                }
+
+            }
+
+            if (Parameter != null)
+            {
+                powershell.AddParameter(Parameter); //Flush...
+            }
+
+        }
+
 
         #endregion
 
