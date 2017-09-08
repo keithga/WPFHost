@@ -13,5 +13,16 @@ Additionally you can add your own XAML WPF code directly to the WPF Application.
 Want to try it out? 
 Run the "BuildAll.ps1" script to compile the samples and see how things work.
 
+## Other Links
+
+https://gallery.technet.microsoft.com/PS2EXE-Convert-PowerShell-9e4e07f1
+https://ps2wiz.codeplex.com
+
+## Future
+
+* Basic Documentation
+* Samples
+* Powershell Helper Libraries
+
 Keith
 
